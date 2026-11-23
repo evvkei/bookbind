@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bookbinding Atlas</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap');
+:root{--bg:#f7f7f3;--ink:#111;--muted:#888;--line:#d9d9d2;--acid:#eaff00;--pink:#f4c8ef}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,Arial,sans-serif;min-height:100vh}
+.topline{height:42px;padding:0 28px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);font:10px 'DM Mono',monospace;letter-spacing:.08em;text-transform:uppercase}
+main{min-height:calc(100vh - 42px);display:grid;grid-template-columns:245px 1fr}
+nav{padding:34px 22px 28px 28px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:5px}
+.nav-label{font:10px 'DM Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:0 0 24px}
+.tab{border:0;background:transparent;color:#999;text-align:left;padding:12px 10px;font:500 15px Inter,sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:color .18s,background .18s}
+.tab:hover{color:var(--ink)}
+.tab.active{background:var(--acid);color:var(--ink)}
+.tab .num{font:10px 'DM Mono',monospace}
+.content{padding:30px clamp(20px,4vw,64px) 28px;display:flex;flex-direction:column;min-width:0}
+.meta{display:flex;justify-content:space-between;align-items:center;font:10px 'DM Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.workarea{flex:1;display:flex;align-items:center;justify-content:center;min-height:390px;padding:18px 0}
+.diagram-wrap{width:min(100%,760px);background:var(--pink);aspect-ratio:1.65;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.diagram{width:90%;height:90%;max-height:460px}
+.book{fill:rgba(255,255,255,.58);stroke:#171717;stroke-width:1.15}
+.spine{fill:var(--acid);stroke:#171717;stroke-width:1.15}
+.hole{fill:#111}
+.thread-base{fill:none;stroke:rgba(17,17,17,.18);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.thread-done{fill:none;stroke:#111;stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round}
+.thread-next{fill:none;stroke:#111;stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round}
+.bottom{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end;border-top:1px solid var(--line);padding-top:18px}
+.sequence-label{font:10px 'DM Mono',monospace;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:11px}
+.arrows{display:flex;flex-wrap:wrap;gap:5px;max-width:700px}
+.token{width:27px;height:27px;display:grid;place-items:center;border:1px solid var(--line);font:16px Inter;color:#aaa}
+.token.done{background:#111;color:#fff;border-color:#111}
+.token.current{background:var(--acid);color:#111;border-color:#111}
+.controls{display:grid;grid-template-columns:repeat(2,42px);gap:5px}
+.arrow{height:39px;width:42px;border:1px solid #111;background:transparent;color:#111;font-size:19px;cursor:pointer}
+.arrow:hover,.arrow:focus-visible{background:var(--acid);outline:none}
+.arrow:active{transform:scale(.96)}
+@media(max-width:700px){
+ main{grid-template-columns:1fr}
+ nav{border-right:0;border-bottom:1px solid var(--line);padding:16px;display:flex;flex-direction:row;flex-wrap:wrap;gap:5px}
+ .nav-label{width:100%;margin:0 0 8px 4px}
+ .tab{font-size:12px;padding:9px}
+ .tab .num{display:none}
+ .content{padding:18px 16px 22px}
+ .workarea{min-height:330px}
+ .diagram-wrap{aspect-ratio:1.1}
+ .bottom{grid-template-columns:1fr;gap:16px}
+ .controls{grid-template-columns:repeat(4,42px)}
+}
+</style>
+</head>
+<body>
+<div class="topline"><span>Bookbinding / Interactive study</span><span>01 — 05</span></div>
+<main>
+<nav id="tabs" aria-label="Binding types"></nav>
+<section class="content">
+ <div class="meta"><span id="current-index">01 / 05</span><span>Follow the thread</span></div>
+ <div class="workarea">
+  <div class="diagram-wrap">
+   <svg class="diagram" id="diagram" viewBox="0 0 520 330" role="img" aria-label="Interactive thread path">
+    <rect x="112" y="35" width="296" height="260" class="book"/>
+    <rect x="238" y="35" width="44" height="260" class="spine"/>
+    <g id="holes"></g>
+    <path id="base" class="thread-base"/>
+    <path id="done" class="thread-done"/>
+    <path id="next" class="thread-next"/>
+   </svg>
+  </div>
+ </div>
+ <div class="bottom">
+  <div><div class="sequence-label">Stitch sequence</div><div class="arrows" id="sequence"></div></div>
+  <div class="controls" aria-label="Move thread">
+   <button class="arrow" data-dir="up" aria-label="Up">↑</button>
+   <button class="arrow" data-dir="right" aria-label="Right">→</button>
+   <button class="arrow" data-dir="left" aria-label="Left">←</button>
+   <button class="arrow" data-dir="down" aria-label="Down">↓</button>
+  </div>
+ </div>
+</section>
+</main>
+<script>
+const data=[
+ {name:"Japanese Binding",seq:["down","right","up","left","down","right","up","left"],holes:4},
+ {name:"Coptic Binding",seq:["down","left","up","right","down","left","up","right","down","left"],holes:5},
+ {name:"Belgian Secret Binding",seq:["right","down","left","up","right","down","left","up","right","down","left","up"],holes:5},
+ {name:"Long-Stitch Binding",seq:["down","down","right","up","up","left","down","down","right","up","up","left"],holes:4},
+ {name:"French Binding",seq:["down","right","down","left","up","left","up","right","down","right","up","left"],holes:5}
+];
+const arrows={up:"↑",down:"↓",left:"←",right:"→"};
+let active=0,step=0;
+const $=id=>document.getElementById(id);
+function positions(seq){
+ let x=0,y=0,pts=[[260,165]];
+ seq.forEach(dir=>{if(dir==="up")y--;if(dir==="down")y++;if(dir==="left")x--;if(dir==="right")x++;pts.push([260+x*25,165+y*25])});
+ return pts;
+}
+function path(points){return points.map((p,i)=>(i?"L":"M")+p[0]+" "+p[1]).join(" ")}
+function render(){
+ const d=data[active],pts=positions(d.seq);
+ $("current-index").textContent=String(active+1).padStart(2,"0")+" / 05";
+ $("tabs").innerHTML='<div class="nav-label">Binding types</div>'+data.map((item,i)=>`<button class="tab ${i===active?"active":""}" data-index="${i}"><span>${item.name}</span><span class="num">${String(i+1).padStart(2,"0")}</span></button>`).join("");
+ document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{active=+b.dataset.index;step=0;render()});
+ $("sequence").innerHTML=d.seq.map((dir,i)=>`<span class="token ${i<step?"done":i===step?"current":""}">${arrows[dir]}</span>`).join("");
+ $("base").setAttribute("d",path(pts));
+ $("done").setAttribute("d",path(pts.slice(0,step+1)));
+ $("next").setAttribute("d",step<d.seq.length?path(pts.slice(step,step+2)):"");
+ const ys=Array.from({length:d.holes},(_,i)=>85+i*(160/(d.holes-1)));
+ $("holes").innerHTML=ys.map(y=>`<circle cx="260" cy="${y}" r="4.5" class="hole"/>`).join("");
+}
+function move(dir){const seq=data[active].seq;if(step<seq.length&&seq[step]===dir){step++;render()}}
+document.querySelectorAll(".arrow").forEach(b=>b.addEventListener("click",()=>move(b.dataset.dir)));
+document.addEventListener("keydown",e=>{const map={ArrowUp:"up",ArrowDown:"down",ArrowLeft:"left",ArrowRight:"right"};if(map[e.key]){e.preventDefault();move(map[e.key])}});
+render();
+</script>
+</body></html>
